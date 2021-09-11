@@ -82,6 +82,8 @@ pub fn extract_make_svg_options(matches: &getopts::Matches) -> Result<MakeSvgOpt
             }
         }
     };
+
+    #[cfg(feature = "custom-styles")]
     let style = match matches.opt_str("custom-style") {
         Some(filename) => {
             let data = std::fs::read_to_string(filename)
@@ -98,6 +100,17 @@ pub fn extract_make_svg_options(matches: &getopts::Matches) -> Result<MakeSvgOpt
                 .clone()
         }
     };
+    #[cfg(not(feature = "custom-styles"))]
+    let style = {
+        let name = matches
+            .opt_str("style")
+            .unwrap_or_else(|| "simple".to_string());
+        GENERATED_STYLES
+            .get(name.as_str())
+            .ok_or(UsageError::InvalidStyle)?
+            .clone()
+    };
+
     let draw_move_numbers = matches.opt_present("move-numbers") || kifu_mode;
     let first_move_number = matches
         .opt_str("first-move-number")
@@ -186,6 +199,7 @@ pub fn build_opts() -> getopts::Options {
         "Style to use. One of 'simple', 'fancy' or 'minimalist'.",
         "STYLE",
     );
+    #[cfg(feature = "custom-styles")]
     opts.optopt(
         "",
         "custom-style",
@@ -244,6 +258,7 @@ pub enum UsageError {
     OverspecifiedRange,
     InvalidRange,
     InvalidStyle,
+    #[cfg(feature = "custom-styles")]
     InvalidStyleFile(Box<dyn std::error::Error>),
     InvalidFirstMoveNumber,
     InvalidBoardSides,
@@ -259,6 +274,7 @@ impl std::fmt::Display for UsageError {
             UsageError::OverspecifiedRange => write!(f, "Specify only '-r' or '-s'"),
             UsageError::InvalidRange => write!(f, "Invalid range."),
             UsageError::InvalidStyle => write!(f, "Invalid style."),
+            #[cfg(feature = "custom-styles")]
             UsageError::InvalidStyleFile(e) => write!(f, "Failed to read style file: {}", e),
             UsageError::InvalidFirstMoveNumber => write!(f, "Invalid first move number."),
             UsageError::InvalidBoardSides => write!(f, "Invalid board sides."),

@@ -3,7 +3,8 @@ use minidom::Element;
 use super::make_svg::NAMESPACE;
 use super::{MakeSvgError, StoneColor};
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "custom-styles", derive(serde::Deserialize))]
 pub struct GobanStyle {
     pub line_color: String,
     pub line_width: f64,
