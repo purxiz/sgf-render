@@ -46,6 +46,10 @@ lazy_static::lazy_static! {{
 }
 
 fn write_style(outfile: &mut fs::File, path: &Path) {
+    let data = &std::fs::read_to_string(path)
+        .unwrap()
+        .parse::<toml::Value>()
+        .unwrap();
     let style_name = path
         .with_extension("")
         .file_name()
@@ -56,11 +60,52 @@ fn write_style(outfile: &mut fs::File, path: &Path) {
     write!(
         outfile,
         r#"
-        m.insert("{style_name}", toml::from_str(include_str!(r"{path}")).unwrap());"#,
+        m.insert("{style_name}", GobanStyle {{
+            line_color: {line_color}.to_string(),
+            line_width: {line_width},
+            hoshi_radius: {hoshi_radius},
+            background_fill: {background_fill}.to_string(),
+            label_color: {label_color}.to_string(),
+            black_stone_fill: {black_stone_fill},
+            white_stone_fill: {white_stone_fill},
+            black_stone_stroke: {black_stone_stroke},
+            white_stone_stroke: {white_stone_stroke},
+            markup_stroke_width: {markup_stroke_width},
+            black_stone_markup_color: {black_stone_markup_color}.to_string(),
+            white_stone_markup_color: {white_stone_markup_color}.to_string(),
+            empty_markup_color: {empty_markup_color}.to_string(),
+            black_stone_selected_color: {black_stone_selected_color}.to_string(),
+            white_stone_selected_color: {white_stone_selected_color}.to_string(),
+            empty_selected_color: {empty_selected_color}.to_string(),
+            defs: {defs},
+        }});"#,
         style_name = style_name,
-        path = path.display(),
+        line_color = data["line_color"],
+        line_width = data["line_width"],
+        hoshi_radius = data["hoshi_radius"],
+        background_fill = data["background_fill"],
+        label_color = data["label_color"],
+        black_stone_fill = display_option(data.get("black_stone_fill")),
+        white_stone_fill = display_option(data.get("white_stone_fill")),
+        black_stone_stroke = display_option(data.get("black_stone_stroke")),
+        white_stone_stroke = display_option(data.get("white_stone_stroke")),
+        markup_stroke_width = data["markup_stroke_width"],
+        black_stone_markup_color = data["black_stone_markup_color"],
+        white_stone_markup_color = data["white_stone_markup_color"],
+        empty_markup_color = data["empty_markup_color"],
+        black_stone_selected_color = data["black_stone_selected_color"],
+        white_stone_selected_color = data["white_stone_selected_color"],
+        empty_selected_color = data["empty_selected_color"],
+        defs = display_option(data.get("defs")),
     )
     .unwrap();
+}
+
+fn display_option(x: Option<&toml::Value>) -> String {
+    match x {
+        Some(value) => format!("Some({}.to_string())", value),
+        None => "None".to_string(),
+    }
 }
 
 fn generate_tests() {
